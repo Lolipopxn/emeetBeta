@@ -1,21 +1,18 @@
 import { useState, useEffect } from "react";
 import { Button, Card, CardActionArea, CardActions, CardContent, CardHeader, Dialog, DialogTitle, Grid, IconButton, Tab, Tabs, Typography } from "@mui/material";
-import { Box, fontFamily } from "@mui/system";
+import { Box } from "@mui/system";
 import { Close, Delete, Edit, Upload } from "@mui/icons-material";
 import Announcement from "../models/Announcement";
 import AnnouncementForm from "./announcement-form";
-import Repo from '../repositories'
-import { storage } from "../fireBaseConfig";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import Swal from 'sweetalert2'
 
-import { db } from "../fireBaseConfig"
-import { doc, deleteDoc, getDocs, DocumentData, collection } from "firebase/firestore";
+import Swal from 'sweetalert2'
+import { db, storage } from "../fireBaseConfig"
+import { doc, deleteDoc, DocumentData, getDoc, getCountFromServer, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 interface Prop {
   announcement: Announcement
   callbackFetchFn: () => void
-  onUpdateAnnouncement : (announcement: Announcement) => void;
 }
 
 function AnnouncementCard(props: Prop) {
@@ -25,50 +22,55 @@ function AnnouncementCard(props: Prop) {
   const [isImporting, setIsImporting] = useState(false);
   const [fileSelected, setFile] = useState<File>();
   const [agendaSelected, setAgenda] = useState<number>();
-  const disable = announcement.isMeetingEnd;
-  const [meetData, setMeetData] = useState<DocumentData>(new Document);
+  const disable = announcement.end;
+  const [meetData, setMeetData] = useState<DocumentData>();
   //const [downloadURL, setDownloadURL] = useState('');
 
   const fetchAnnList = async () => {
-    await getDocs(collection(db, "Meets"))
-    .then((querySnapshot) => {
-        const newData = querySnapshot.docs.map((doc) =>({...doc.data(), id: doc.id}));
-        setMeetData(newData);
-    })
-          
+    const newData = await getDoc(doc(db, "Meets", announcement?.id.toLocaleString()));
+    setMeetData(newData.data()); 
   }
 
   useEffect(() => {
     fetchAnnList()
-})
+  },[meetData])
 
-  const onUpdate = async (ann: Partial<Announcement>) => {
-      setPopup(false)
-      Swal.fire({
-        title: 'ต้องการแก้ไขหรือไม่?',
-        showDenyButton: true,
-        showCancelButton: true,
-        confirmButtonText: 'บันทึก',
-        cancelButtonText: 'ยกเลิก',
-        denyButtonText: `ละทิ้ง`,
-      }).then((results) => {
-        /* Read more about isConfirmed, isDenied below */
-        if (results.isConfirmed) {
-          Swal.fire('บันทึกเสร็จสิ้น!', '', 'success')
-        } else if (results.isDenied) {
-          Swal.fire('ข้อมูลไม่ถูกบันทึก', '', 'info')
-        }
-      })
-  }
-
-  
+  const onUpdate = async (ann: any) => {
+    setPopup(false)
+    fetchAnnList()
+    await Swal.fire({
+      title: 'ต้องการแก้การประชุมหรือไม่?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'ยืนยัน',
+      cancelButtonText: 'ยกเลิก'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          Swal.fire(
+            'แก้ไขเสร็จสิ้น!',
+            'รายการประชุมถูกแก้ไขแล้ว',
+            'success'
+          );
+          await updateDoc(doc(db, "Meets", announcement.id.toLocaleString()), ann)
+        } catch (error) {
+          console.error(error);
+          Swal.fire(
+            'เกิดข้อผิดพลาด!',
+            '',
+            'error'
+          );
+        } 
+      }
+    });
+  };
+    
 
   const onDelete = async () => {
-    await deleteDoc(doc(db, "Meets", announcement.id.toLocaleString()));
-
     await Swal.fire({
       title: 'ลบรายการประชุมหรือไม่?',
-      text: "หากลบออกแล้วจะไม่สามารถกู้คืนได้!",
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
@@ -83,30 +85,36 @@ function AnnouncementCard(props: Prop) {
             'รายการประชุมถูกลบออกจากฐานข้อมูลแล้ว',
             'success'
           );
+          await deleteDoc(doc(db, "Meets", announcement.id.toLocaleString()));
         } catch (error) {
           console.error(error);
           Swal.fire(
             'เกิดข้อผิดพลาด!',
             'ไม่สามารถลบรายการประชุมได้',
-            'error'
+            'info'
           );
-        }
+        } 
+        setMeetData([]);
       }
     });
   };
 
   const handleMeeting = async () => {
-    //const newData = await getDoc(doc(db, "Meets", announcement.id.toLocaleString()));
-    //const data = newData.data();
+    const newData = await getDoc(doc(db, "Meets", announcement.id.toLocaleString()));
+    const data = newData.data();
 
-    //const result = await Repo.announcements.MeetingEnd(announcement.id, true)
-    //const datetime = await Repo.announcements.read(announcement.id)
-    //if(result) {
-      //props.onUpdateAnnouncement(result)
-    //}
-    //if(datetime){
-      //props.onUpdateAnnouncement(datetime)
-    //}
+    if (data) {
+      await updateDoc(
+        doc(db, "Meets", announcement.id.toLocaleString()),
+        { end: true }
+      );
+    }
+    if (data) {
+      await updateDoc(
+        doc(db, "Meets", announcement.id.toLocaleString()),
+        { lastUpdated: serverTimestamp() }
+      );
+    }
     setPopup(false);
   }
 
@@ -169,7 +177,7 @@ function AnnouncementCard(props: Prop) {
           sx={{ height: '30%' }}
           title={<Typography variant="h6" sx={{fontFamily:'Kanit',fontWeight:500}}>{meetData?.topic}</Typography>}
           subheader={<Typography sx={{fontFamily:'Kanit',fontWeight:300,fontSize:17}}>{meetData?.date}</Typography>}
-          header={meetData?.desc}
+          header={meetData?.detail}
           action={
             <IconButton sx={{ '&:hover': { color: 'red' } }} onClick={onDelete}>
               <Delete />
@@ -202,12 +210,12 @@ function AnnouncementCard(props: Prop) {
         <CardContent sx={{ height: '40%' }}>
           <Grid container spacing={2} columns={5}>
             <Grid item>
-              {meetData?.end &&
+            {meetData?.lastUpdated && (
               <Typography component="div">
                   <p style={{fontFamily:'Kanit',fontWeight:400,fontSize:22}}>สิ้นสุดการประชุมเมื่อ</p>
-                  <p>{new Date(meetData?.recognizeTime!.toString()).toLocaleString("en-GB")}</p>
+                  <p>{new Date(meetData?.lastUpdated!.toDate()).toLocaleString()}</p>
                 </Typography>
-              }
+              )}
             </Grid>
           </Grid>
         </CardContent>
@@ -320,11 +328,11 @@ function AnnouncementCard(props: Prop) {
           <Button disabled={meetData?.end} variant="contained" sx={{ mx: 4, my: 1, verticalAlign: 'bottom', width: 200, height: 50,fontFamily:'Kanit',fontWeight:500,borderRadius:8,backgroundColor:'#ED5E68',fontSize:17,'&:hover':{backgroundColor:'#ED5E68'}}} onClick={handleMeeting}>
             สิ้นสุดการประชุม
           </Button>
-        </div>
-        {announcement.recognizeTime &&
-        <Typography variant="h6" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end' }}>
-              {new Date(announcement?.recognizeTime!.toString()).toLocaleString("en-GB")}
+          {disable &&
+          <Typography variant="h6" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end' }}>
+
           </Typography>}
+        </div>
         </Box>
       </Dialog>
     </Box>

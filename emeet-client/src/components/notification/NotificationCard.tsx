@@ -7,7 +7,6 @@ import Announcement from "../../models/Announcement";
 
 interface Prop {
     announcement: Announcement
-    onUpdateAnnouncement : (announcement: Announcement) => void;
 }
 
 function NotificationCard(props: Prop) {
@@ -16,16 +15,15 @@ function NotificationCard(props: Prop) {
 
     return(
         
-        <Box sx={{ position: 'relative' }} color={announcement.recognizeTime ? "success" : "disabled"}>
+        <Box sx={{ position: 'relative' }} color={announcement.end ? "success" : "disabled"}>
             <Card sx={{ boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)' }}>
-                { !announcement.isMeetingEnd && 
                 <CardActionArea onClick={() => setPopup(true)}>
                     <CardHeader
                         sx={{ height: 100 ,width: 700}}
                         title={announcement.topic}
-                        subheader={announcement.meetDate}
+                        subheader={announcement.date}
                     />
-                </CardActionArea>}
+                </CardActionArea>
             </Card>
             <Dialog PaperProps={{ sx: { minWidth: "50%", maxHeight: "100%" } }} open={popup} onClose={() => setPopup(false)}>
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -39,7 +37,7 @@ function NotificationCard(props: Prop) {
         <DialogContent dividers>
           
           <Typography variant="h6" sx={{ mt: 1 }}>
-            ประชุมวันที่: {announcement.meetDate}
+            ประชุมวันที่: {announcement.date}
           </Typography>
           <Typography variant="h6" sx={{ mt: 1 }}>
             สถานที่: {announcement.place}

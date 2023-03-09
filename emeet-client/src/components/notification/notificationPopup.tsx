@@ -1,29 +1,22 @@
 import { Typography, Grid } from "@mui/material";
 import { Box } from "@mui/system";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Key } from "react";
 
 import Announcement from "../../models/Announcement";
-import Repo from '../../repositories';
 import NotificationCard from "./NotificationCard";
 
-function NotificationPopup(): JSX.Element {
-  const [annList, setAnnList] = useState<Announcement[]>([]);
+import { db } from "../../fireBaseConfig"
+import { collection, getDocs, DocumentData } from "firebase/firestore";
 
-  const onUpdateAnnouncement = (announcement: Announcement) => {
-    setAnnList(prevAnnList => prevAnnList.map(item => item.id === announcement.id ? announcement : item))}
-
-  const unReadCount = annList.filter(ann => !ann.isMeetingEnd).length;
+function NotificationPopup() {
+  const [annList, setAnnList] = useState<DocumentData>(new Document);
 
   const fetchAnnList = async () => {
-    let params: { keyword?: string} = {}
-
-    const result = await Repo.announcements.getAll(params)
-    if (result) {
-      if (annList.length) {
-        setAnnList([])
-      }
-      setAnnList(result)
-    }
+    await getDocs(collection(db, "Meets"))
+    .then((querySnapshot) => {
+        const newData = querySnapshot.docs.map((doc) =>({...doc.data(), id: doc.id}));
+        setAnnList(newData);
+    })
   }
 
   useEffect(() => {
@@ -39,14 +32,14 @@ function NotificationPopup(): JSX.Element {
       backgroundRepeat: 'no-repeat' 
     }}>
       <div>
-        {unReadCount
+        {annList.length
           ?
           <Grid
             container spacing={2}
           >
-            {annList.filter((announcement) => !announcement.isMeetingEnd).map((announcement, index) => 
+            {annList.filter((announcement: Announcement) => !announcement.end == true).map((announcement: Announcement, index: Key) => 
               <Grid item mx={10} key={index} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'right', width: 660}}>
-                  <NotificationCard announcement={announcement} onUpdateAnnouncement={onUpdateAnnouncement}></NotificationCard>
+                  <NotificationCard announcement={announcement}></NotificationCard>
               </Grid>
             )}
 

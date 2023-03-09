@@ -8,23 +8,20 @@ import AnnouncementForm from "../components/announcement-form";
 import Announcement from "../models/Announcement";
 import './bg.css';
 import './an-list.css'
+import Swal from 'sweetalert2'
 
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
 import { db } from "../fireBaseConfig"
-import { collection, getDocs, DocumentData } from "firebase/firestore";
+import { collection, getDocs, DocumentData, setDoc, getCountFromServer, doc } from "firebase/firestore";
 
 function AnnouncementList() {
-  const [announcementList, setAnnouncementList] = useState<Announcement[]>([])
   const [annList, setAnnList] = useState<DocumentData>(new Document);
   const [searchFilter, setSearchFilter] = useState('');
   const [createFormPopup, setCreateFormPopup] = useState(false);
   const auth = getAuth();
   const navigate = useNavigate();
-
-  const onUpdateAnnouncement = (announcement: Announcement) => {
-    setAnnouncementList(prevAnnouncementList => prevAnnouncementList.map(item => item.id === announcement.id ? announcement : item))}
 
   const fetchAnnouncementList = async () => {
     await getDocs(collection(db, "Meets"))
@@ -38,10 +35,35 @@ function AnnouncementList() {
     setSearchFilter(event.target.value);
   }
 
-  const onCreateAnnouncement = async () => {
-    fetchAnnouncementList()
-    setCreateFormPopup(false)
-  }
+  const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.addEventListener('mouseenter', Swal.stopTimer)
+      toast.addEventListener('mouseleave', Swal.resumeTimer)
+    }
+  })
+
+  const onCreateAnnouncement = async (ann: any) => {
+    if (ann.id === undefined) {
+      const coll = collection(db, "Meets");
+      const snapshot = await getDocs(coll);
+      const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+      const lastId = lastDoc ? lastDoc.id : "0";
+      const newId = (parseInt(lastId) + 1).toLocaleString();
+      ann.id = newId;
+      setCreateFormPopup(false);
+      await setDoc(doc(db, "Meets", newId), ann);
+      fetchAnnouncementList();
+      Toast.fire({
+        icon: "success",
+        title: "เพิ่มรายการประชุมสำเร็จ !!",
+      });
+    }
+  };
 
   useEffect(() => {
     fetchAnnouncementList()
@@ -57,7 +79,7 @@ function AnnouncementList() {
       return () => {
         listen();
       }
-  }, [searchFilter])
+  }, [searchFilter, annList])
 
   return (
     <div className="page-layout">
@@ -78,9 +100,9 @@ function AnnouncementList() {
       {annList.length ?
       <div className="ann-con">
         <Grid container sx={{ p: 2 }} spacing={{ xs: 2, md: 3 }} columns={{ xs: 2, sm: 8, md: 12, lg: 12, xl: 10 }}>
-        {annList.map((ann: Announcement, index: Key | null | undefined) => (
+        {annList.filter((ann: Announcement) => !ann.end).map((ann: Announcement, index : Key) => (
           <Grid item xs={2} sm={4} md={4} lg={3} xl={2} key={index}>
-            <AnnouncementCard announcement={ann} callbackFetchFn={fetchAnnouncementList} onUpdateAnnouncement={onUpdateAnnouncement}></AnnouncementCard>
+            <AnnouncementCard announcement={ann} callbackFetchFn={fetchAnnouncementList}></AnnouncementCard>
           </Grid>
       ))}
       </Grid>
@@ -97,9 +119,9 @@ function AnnouncementList() {
       {annList.length ?
       <div className="ann-con">
         <Grid container sx={{ p: 2 }} spacing={{ xs: 2, md: 3 }} columns={{ xs: 2, sm: 8, md: 12, lg: 12, xl: 10 }}>
-        {annList.map((ann: Announcement, index: Key | null | undefined) => (
+        {annList.filter((ann: Announcement) => ann.end).map((ann: Announcement, index : Key) => (
           <Grid item xs={2} sm={4} md={4} lg={3} xl={2} key={index}>
-            <AnnouncementCard announcement={ann} callbackFetchFn={fetchAnnouncementList} onUpdateAnnouncement={onUpdateAnnouncement}></AnnouncementCard>
+            <AnnouncementCard announcement={ann} callbackFetchFn={fetchAnnouncementList}></AnnouncementCard>
           </Grid>
       ))}
       </Grid>

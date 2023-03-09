@@ -5,29 +5,30 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import Badge from '@mui/material/Badge';
 
 import NotificationPopup from "./notificationPopup"
-import Repo from '../../repositories';
 import Announcement from "../../models/Announcement";
 
-function Notifications(): JSX.Element {
+import { db } from "../../fireBaseConfig"
+import { collection, getDocs, DocumentData } from "firebase/firestore";
+
+function Notifications() {
     const [popup, setPopup] = useState(false);
     const [count, setCount] = useState(0);
-    const [annList, setAnnList] = useState<Announcement[]>([]);
+    const [annList, setAnnList] = useState<DocumentData>(new Document);
+    const [dataEnd, setDataEnd] = useState([])
 
     const fetchAnnList = async () => {
-        let params: { keyword?: string} = {}
-    
-        const result = await Repo.announcements.getAll(params)
-        if (result) {
-            if (annList.length) {
-                setAnnList([])
-            }
-            setAnnList(result)
-        } 
+        await getDocs(collection(db, "Meets"))
+        .then((querySnapshot) => {
+            const newData = querySnapshot.docs.map((doc) =>({...doc.data(), id: doc.id}));
+            setAnnList(newData);
+        })
+        const data = annList.filter((announcement: Announcement) => !announcement.end == true)
+        setDataEnd(data);
     }
 
     useEffect(() => {
         fetchAnnList()
-        const unReadCount = annList.filter(ann => !ann.isMeetingEnd).length;
+        const unReadCount = dataEnd.length;
         setCount(unReadCount)
     }, [annList])
 

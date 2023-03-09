@@ -1,11 +1,11 @@
 export default interface Announcement{
     id: number
     topic: string
-    meetDate: string
+    date: string
     detail: string
     place: string
     agendaRule: string
     pubDateTime: Date
-    recognizeTime: Date
-    isMeetingEnd: boolean
+    lastUpdated: Date
+    end: boolean
 }

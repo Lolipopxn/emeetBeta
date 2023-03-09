@@ -20,7 +20,7 @@ function MeetInfoCard(props: Prop) {
   const announcement = props.announcement;
   const [popup, setPopup] = useState(false);
   const [popup2, setPopup2] = useState(false);
-  const disable = announcement.isMeetingEnd;
+  const disable = announcement.end;
   const storage = getStorage();
   const [data, setData] = useState<string[]>([]);
   const [number, setNumber] = useState(0);
@@ -60,7 +60,7 @@ function MeetInfoCard(props: Prop) {
 
   useEffect(() => {
     fetchPost();
-  }, []);
+  });
 
   return (
     <Box>
@@ -126,10 +126,12 @@ function MeetInfoCard(props: Prop) {
             <Close />
           </IconButton>
         </DialogTitle>
-        {meetData?.end &&
+
+        {meetData?.lastUpdated && (
           <Typography  variant="h6" sx={{ mt: 1}}  marginLeft={3}>
-            สิ้นสุดการประชุมเวลา: {new Date(meetData?.recognizeTime!.toString()).toLocaleString("en-GB")}
-          </Typography>}
+            สิ้นสุดการประชุมเวลา: <p>{new Date(meetData?.lastUpdated!.toDate()).toLocaleString()}</p>
+          </Typography>
+        )}
         <DialogContent dividers>
 
           <Typography variant="h6" sx={{ mt: 1,fontFamily:'Kanit',fontWeight:400 }}>
