@@ -9,6 +9,9 @@ import { storage } from "../fireBaseConfig";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import Swal from 'sweetalert2'
 
+import { db } from "../fireBaseConfig"
+import { doc, deleteDoc, getDoc } from "firebase/firestore";
+import { constant } from "lodash";
 
 interface Prop {
   announcement: Announcement
@@ -52,6 +55,8 @@ function AnnouncementCard(props: Prop) {
   
 
   const onDelete = async () => {
+    await deleteDoc(doc(db, "Meets", announcement.id.toLocaleString()));
+
     await Swal.fire({
       title: 'ลบรายการประชุมหรือไม่?',
       text: "หากลบออกแล้วจะไม่สามารถกู้คืนได้!",
@@ -64,8 +69,6 @@ function AnnouncementCard(props: Prop) {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await Repo.announcements.delete(announcement.id);
-          props.callbackFetchFn();
           Swal.fire(
             'ลบเสร็จสิ้น!',
             'รายการประชุมถูกลบออกจากฐานข้อมูลแล้ว',
@@ -84,14 +87,17 @@ function AnnouncementCard(props: Prop) {
   };
 
   const handleMeeting = async () => {
-    const result = await Repo.announcements.MeetingEnd(announcement.id, true)
-    const datetime = await Repo.announcements.read(announcement.id)
-    if(result) {
-      props.onUpdateAnnouncement(result)
-    }
-    if(datetime){
-      props.onUpdateAnnouncement(datetime)
-    }
+    //const newData = await getDoc(doc(db, "Meets", announcement.id.toLocaleString()));
+    //const data = newData.data();
+
+    //const result = await Repo.announcements.MeetingEnd(announcement.id, true)
+    //const datetime = await Repo.announcements.read(announcement.id)
+    //if(result) {
+      //props.onUpdateAnnouncement(result)
+    //}
+    //if(datetime){
+      //props.onUpdateAnnouncement(datetime)
+    //}
     setPopup(false);
   }
 

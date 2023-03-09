@@ -1,4 +1,4 @@
-import { useState, useEffect, ChangeEvent } from "react";
+import { useState, useEffect, ChangeEvent, Key } from "react";
 import { Button, Dialog, DialogTitle, Grid, IconButton, TextField, Typography } from "@mui/material";
 import { Box } from "@mui/system";
 import { Add, Close } from '@mui/icons-material/';
@@ -13,8 +13,12 @@ import './an-list.css'
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
+import { db } from "../fireBaseConfig"
+import { collection, getDocs, DocumentData, doc, deleteDoc } from "firebase/firestore";
+
 function AnnouncementList() {
   const [announcementList, setAnnouncementList] = useState<Announcement[]>([])
+  const [annList, setAnnList] = useState<DocumentData>(new Document);
   const [searchFilter, setSearchFilter] = useState('');
   const [createFormPopup, setCreateFormPopup] = useState(false);
   const auth = getAuth();
@@ -24,16 +28,11 @@ function AnnouncementList() {
     setAnnouncementList(prevAnnouncementList => prevAnnouncementList.map(item => item.id === announcement.id ? announcement : item))}
 
   const fetchAnnouncementList = async () => {
-    let params = {
-      keyword: searchFilter
-    }
-    const result = await Repo.announcements.getAll(params)
-    if (result) {
-      if (announcementList.length) {
-        setAnnouncementList([])
-      }
-      setAnnouncementList(result)
-    }
+    await getDocs(collection(db, "Meets"))
+            .then((querySnapshot) => {
+              const newData = querySnapshot.docs.map((doc) =>({...doc.data(), id: doc.id}));
+              setAnnList(newData);
+            })
   }
 
   const handleChangeSearchFilter = (event: ChangeEvent<HTMLInputElement>) => {
@@ -41,7 +40,6 @@ function AnnouncementList() {
   }
 
   const onCreateAnnouncement = async (ann: Partial<Announcement>) => {
-    await Repo.announcements.create(ann)
     fetchAnnouncementList()
     setCreateFormPopup(false)
   }
@@ -78,10 +76,10 @@ function AnnouncementList() {
       </Button>
       <h4 style={{fontFamily:'Kanit',fontWeight:600,marginBottom:10}}>การประชุมที่ยังไม่ถึง</h4>
       <hr></hr>
-      {announcementList.filter((ann) => !ann.isMeetingEnd).length > 0 ?
+      {annList.length ?
       <div className="ann-con">
         <Grid container sx={{ p: 2 }} spacing={{ xs: 2, md: 3 }} columns={{ xs: 2, sm: 8, md: 12, lg: 12, xl: 10 }}>
-        {announcementList.filter((ann) => !ann.isMeetingEnd).map((ann, index) => (
+        {annList.map((ann: Announcement, index: Key | null | undefined) => (
           <Grid item xs={2} sm={4} md={4} lg={3} xl={2} key={index}>
             <AnnouncementCard announcement={ann} callbackFetchFn={fetchAnnouncementList} onUpdateAnnouncement={onUpdateAnnouncement}></AnnouncementCard>
           </Grid>
@@ -93,7 +91,7 @@ function AnnouncementList() {
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 150 }} marginRight={20}>
           <Typography variant="body2" color="text.secondary" sx={{fontFamily:'Kanit'}}>ไม่พบรายการการประชุม</Typography>
         </Box>
-        }
+      }
 
       <h4 style={{fontFamily:'Kanit',fontWeight:600,marginBottom:10}}>การประชุมที่จบไปเเล้ว</h4>
       <hr></hr>

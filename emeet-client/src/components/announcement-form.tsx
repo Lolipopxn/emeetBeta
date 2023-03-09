@@ -4,6 +4,9 @@ import { useRef } from "react";
 import Announcement from "../models/Announcement";
 import Swal from 'sweetalert2'
 
+import { collection, doc, setDoc, getCountFromServer } from "firebase/firestore";
+import { db } from "../fireBaseConfig"
+
 interface Prop {
   announcement: Partial<Announcement>
   callbackFn: (ann: Partial<Announcement>) => void
@@ -28,16 +31,22 @@ function AnnouncementForm(props: Prop) {
     }
   })
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
+    const coll = collection(db, "Meets");
+    const snapshot = await getCountFromServer(coll);
+    const id = (snapshot.data().count + 1).toLocaleString();
+
     if (meetDateRef.current?.value.match(/^\d{2}-\d{2}-\d{4}$/)){
-      props.callbackFn({
-        id: props.announcement.id,
+      await setDoc(doc(db, "Meets", id), {
+        id: id,
+        end: false,
         topic: topicRef.current?.value,
-        meetDate: meetDateRef.current?.value,
-        detail: detailRef.current?.value,
+        date: meetDateRef.current?.value,
+        desc: detailRef.current?.value,
         place: placeRef.current?.value,
-        agendaRule: agenRuleRef.current?.value,
-      })
+        agendaRule: agenRuleRef.current?.value
+      });
+      
       Toast.fire({
         icon: 'success',
         title: 'เพิ่มรายการประชุมสำเร็จ !!'
