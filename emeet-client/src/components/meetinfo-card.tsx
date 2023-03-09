@@ -70,7 +70,7 @@ function MeetInfoCard(props: Prop) {
         <CardHeader
           sx={{ height: '30%' }}
           title={<Typography variant="h6" sx={{fontFamily:'Kanit',fontWeight:500}}>{meetData?.topic}</Typography>}
-          subheader={<Typography sx={{fontFamily:'Kanit',fontWeight:300,fontSize:17}}>{meetData?.meetDate}</Typography>}
+          subheader={<Typography sx={{fontFamily:'Kanit',fontWeight:300,fontSize:17}}>{meetData?.date}</Typography>}
         />
         <CardActionArea sx={{ height: '56%' }} onClick={() => setPopup(true)}>
           <CardContent sx={{ height: '40%' }}>
@@ -95,7 +95,7 @@ function MeetInfoCard(props: Prop) {
         <CardHeader
           sx={{ height: '30%' }}
           title={<Typography variant="h6" sx={{fontFamily:'Kanit',fontWeight:500}}>{meetData?.topic}</Typography>}
-          subheader={<Typography sx={{fontFamily:'Kanit',fontWeight:300,fontSize:17}}>{meetData?.meetDate}</Typography>}
+          subheader={<Typography sx={{fontFamily:'Kanit',fontWeight:300,fontSize:17}}>{meetData?.date}</Typography>}
         />
         <CardActionArea sx={{ height: '56%' }} onClick={() => setPopup(true)}>
           <CardContent sx={{ height: '40%' }}>
@@ -133,7 +133,7 @@ function MeetInfoCard(props: Prop) {
         <DialogContent dividers>
 
           <Typography variant="h6" sx={{ mt: 1,fontFamily:'Kanit',fontWeight:400 }}>
-            ประชุมวันที่: {meetData?.meetDate}
+            ประชุมวันที่: {meetData?.date}
           </Typography>
           <Typography variant="h6" sx={{ mt: 1,fontFamily:'Kanit',fontWeight:400 }}>
             สถานที่: {meetData?.place}

@@ -25,7 +25,6 @@ function MeetInfoList() {
           const newData = querySnapshot.docs.map((doc) =>({...doc.data(), id: doc.id}));
           setMeetData(newData);
       })
-            
     }
 
     const handleChangeSearchFilter = (event: ChangeEvent<HTMLInputElement>) => {
@@ -57,7 +56,7 @@ function MeetInfoList() {
             </Grid>
             :
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 400}}>
-              <Typography variant='body2' color='text.secondary'>No Result Found</Typography>
+              <Typography variant='body2' color='text.secondary'>ไม่พบรายการการประชุม</Typography>
             </Box>
           }
           </div>

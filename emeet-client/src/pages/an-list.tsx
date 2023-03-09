@@ -6,7 +6,6 @@ import AnnouncementCard from "../components/announcement-card";
 import MeetAppbar from "../components/app-bar";
 import AnnouncementForm from "../components/announcement-form";
 import Announcement from "../models/Announcement";
-import Repo from '../repositories'
 import './bg.css';
 import './an-list.css'
 
@@ -14,7 +13,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
 import { db } from "../fireBaseConfig"
-import { collection, getDocs, DocumentData, doc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, DocumentData } from "firebase/firestore";
 
 function AnnouncementList() {
   const [announcementList, setAnnouncementList] = useState<Announcement[]>([])
@@ -29,17 +28,17 @@ function AnnouncementList() {
 
   const fetchAnnouncementList = async () => {
     await getDocs(collection(db, "Meets"))
-            .then((querySnapshot) => {
-              const newData = querySnapshot.docs.map((doc) =>({...doc.data(), id: doc.id}));
-              setAnnList(newData);
-            })
+      .then((querySnapshot) => {
+          const newData = querySnapshot.docs.map((doc) =>({...doc.data(), id: doc.id}));
+          setAnnList(newData);
+      })
   }
 
   const handleChangeSearchFilter = (event: ChangeEvent<HTMLInputElement>) => {
     setSearchFilter(event.target.value);
   }
 
-  const onCreateAnnouncement = async (ann: Partial<Announcement>) => {
+  const onCreateAnnouncement = async () => {
     fetchAnnouncementList()
     setCreateFormPopup(false)
   }
@@ -95,10 +94,10 @@ function AnnouncementList() {
 
       <h4 style={{fontFamily:'Kanit',fontWeight:600,marginBottom:10}}>การประชุมที่จบไปเเล้ว</h4>
       <hr></hr>
-      {announcementList.filter((ann) => ann.isMeetingEnd).length > 0 ?
+      {annList.length ?
       <div className="ann-con">
         <Grid container sx={{ p: 2 }} spacing={{ xs: 2, md: 3 }} columns={{ xs: 2, sm: 8, md: 12, lg: 12, xl: 10 }}>
-        {announcementList.filter((ann) => ann.isMeetingEnd).map((ann, index) => (
+        {annList.map((ann: Announcement, index: Key | null | undefined) => (
           <Grid item xs={2} sm={4} md={4} lg={3} xl={2} key={index}>
             <AnnouncementCard announcement={ann} callbackFetchFn={fetchAnnouncementList} onUpdateAnnouncement={onUpdateAnnouncement}></AnnouncementCard>
           </Grid>

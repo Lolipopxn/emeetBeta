@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button, Card, CardActionArea, CardActions, CardContent, CardHeader, Dialog, DialogTitle, Grid, IconButton, Tab, Tabs, Typography } from "@mui/material";
 import { Box, fontFamily } from "@mui/system";
 import { Close, Delete, Edit, Upload } from "@mui/icons-material";
@@ -10,8 +10,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import Swal from 'sweetalert2'
 
 import { db } from "../fireBaseConfig"
-import { doc, deleteDoc, getDoc } from "firebase/firestore";
-import { constant } from "lodash";
+import { doc, deleteDoc, getDocs, DocumentData, collection } from "firebase/firestore";
 
 interface Prop {
   announcement: Announcement
@@ -27,29 +26,39 @@ function AnnouncementCard(props: Prop) {
   const [fileSelected, setFile] = useState<File>();
   const [agendaSelected, setAgenda] = useState<number>();
   const disable = announcement.isMeetingEnd;
+  const [meetData, setMeetData] = useState<DocumentData>(new Document);
   //const [downloadURL, setDownloadURL] = useState('');
 
+  const fetchAnnList = async () => {
+    await getDocs(collection(db, "Meets"))
+    .then((querySnapshot) => {
+        const newData = querySnapshot.docs.map((doc) =>({...doc.data(), id: doc.id}));
+        setMeetData(newData);
+    })
+          
+  }
+
+  useEffect(() => {
+    fetchAnnList()
+})
+
   const onUpdate = async (ann: Partial<Announcement>) => {
-    const result = await Repo.announcements.update(ann)
-    if (result) {
-        setPopup(false)
-        Swal.fire({
-          title: 'ต้องการแก้ไขหรือไม่?',
-          showDenyButton: true,
-          showCancelButton: true,
-          confirmButtonText: 'บันทึก',
-          cancelButtonText: 'ยกเลิก',
-          denyButtonText: `ละทิ้ง`,
-        }).then((results) => {
-          /* Read more about isConfirmed, isDenied below */
-          if (results.isConfirmed) {
-            props.onUpdateAnnouncement(result)
-            Swal.fire('บันทึกเสร็จสิ้น!', '', 'success')
-          } else if (results.isDenied) {
-            Swal.fire('ข้อมูลไม่ถูกบันทึก', '', 'info')
-          }
-        })
-    }
+      setPopup(false)
+      Swal.fire({
+        title: 'ต้องการแก้ไขหรือไม่?',
+        showDenyButton: true,
+        showCancelButton: true,
+        confirmButtonText: 'บันทึก',
+        cancelButtonText: 'ยกเลิก',
+        denyButtonText: `ละทิ้ง`,
+      }).then((results) => {
+        /* Read more about isConfirmed, isDenied below */
+        if (results.isConfirmed) {
+          Swal.fire('บันทึกเสร็จสิ้น!', '', 'success')
+        } else if (results.isDenied) {
+          Swal.fire('ข้อมูลไม่ถูกบันทึก', '', 'info')
+        }
+      })
   }
 
   
@@ -158,9 +167,9 @@ function AnnouncementCard(props: Prop) {
       <Card sx={{ maxWidth: 500, height: 240, borderRadius:7}}>
         <CardHeader
           sx={{ height: '30%' }}
-          title={<Typography variant="h6" sx={{fontFamily:'Kanit',fontWeight:500}}>{announcement?.topic}</Typography>}
-          subheader={<Typography sx={{fontFamily:'Kanit',fontWeight:300,fontSize:17}}>{announcement?.meetDate}</Typography>}
-          header={announcement?.detail}
+          title={<Typography variant="h6" sx={{fontFamily:'Kanit',fontWeight:500}}>{meetData?.topic}</Typography>}
+          subheader={<Typography sx={{fontFamily:'Kanit',fontWeight:300,fontSize:17}}>{meetData?.date}</Typography>}
+          header={meetData?.desc}
           action={
             <IconButton sx={{ '&:hover': { color: 'red' } }} onClick={onDelete}>
               <Delete />
@@ -172,7 +181,7 @@ function AnnouncementCard(props: Prop) {
             <Grid container spacing={2} columns={5}>
               <Grid item xs={3}>
               <Typography variant="h5" component="div" sx={{fontFamily:'Kanit',fontSize:22}}>
-                  {announcement.place}
+                  {meetData?.place}
                 </Typography>
               </Grid>
             </Grid>
@@ -186,17 +195,17 @@ function AnnouncementCard(props: Prop) {
       <Card sx={{ maxWidth: 500, height: 240, backgroundColor: '#EEEEEE', borderRadius:7}}>
       <CardHeader
         sx={{ height: '30%' }}
-        title={<Typography variant="h6" sx={{fontFamily:'Kanit',fontWeight:500}}>{announcement?.topic}</Typography>}
-        subheader={<Typography sx={{fontFamily:'Kanit',fontWeight:300,fontSize:17}}>{announcement?.meetDate}</Typography>}
-        header={announcement?.detail}
+        title={<Typography variant="h6" sx={{fontFamily:'Kanit',fontWeight:500}}>{meetData?.topic}</Typography>}
+        subheader={<Typography sx={{fontFamily:'Kanit',fontWeight:300,fontSize:17}}>{meetData?.date}</Typography>}
+        header={meetData?.desc}
       />
         <CardContent sx={{ height: '40%' }}>
           <Grid container spacing={2} columns={5}>
             <Grid item>
-              {announcement.recognizeTime &&
+              {meetData?.end &&
               <Typography component="div">
                   <p style={{fontFamily:'Kanit',fontWeight:400,fontSize:22}}>สิ้นสุดการประชุมเมื่อ</p>
-                  <p>{new Date(announcement?.recognizeTime!.toString()).toLocaleString("en-GB")}</p>
+                  <p>{new Date(meetData?.recognizeTime!.toString()).toLocaleString("en-GB")}</p>
                 </Typography>
               }
             </Grid>
@@ -308,7 +317,7 @@ function AnnouncementCard(props: Prop) {
         </Box>
         <Box hidden={tabIndex !== 2}>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end' }}>
-          <Button disabled={announcement.isMeetingEnd} variant="contained" sx={{ mx: 4, my: 1, verticalAlign: 'bottom', width: 200, height: 50,fontFamily:'Kanit',fontWeight:500,borderRadius:8,backgroundColor:'#ED5E68',fontSize:17,'&:hover':{backgroundColor:'#ED5E68'}}} onClick={handleMeeting}>
+          <Button disabled={meetData?.end} variant="contained" sx={{ mx: 4, my: 1, verticalAlign: 'bottom', width: 200, height: 50,fontFamily:'Kanit',fontWeight:500,borderRadius:8,backgroundColor:'#ED5E68',fontSize:17,'&:hover':{backgroundColor:'#ED5E68'}}} onClick={handleMeeting}>
             สิ้นสุดการประชุม
           </Button>
         </div>
